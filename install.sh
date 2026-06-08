@@ -88,10 +88,13 @@ download_binary() {
 
     info "Extracting..."
     tar xzf "$TMP_ARCHIVE" -C "$TMP_DIR"
-    TMP_FILE="$TMP_DIR/$BINARY"
 
-    if [ ! -f "$TMP_FILE" ]; then
-        err "Archive extracted but binary not found inside."
+    TMP_FILE="$TMP_DIR/$BINARY"
+    EXTRACTED=$(ls "$TMP_DIR" | grep -v "^$(basename "$TMP_ARCHIVE")$" | head -1)
+    if [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "$BINARY" ]; then
+        mv -f "$TMP_DIR/$EXTRACTED" "$TMP_FILE"
+    elif [ ! -f "$TMP_FILE" ]; then
+        err "Could not find binary in extracted archive."
         rm -rf "$TMP_DIR"
         exit 1
     fi
