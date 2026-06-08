@@ -74,14 +74,18 @@ download_binary() {
     info "Downloading $BINARY for $OS/$ARCH..."
     echo "  $DOWNLOAD_URL"
 
+    DOWNLOAD_OK=false
     if command -v curl &>/dev/null; then
-        curl -fsSL "$DOWNLOAD_URL" -o "$TMP_ARCHIVE" --progress-bar
+        curl -sSL "$DOWNLOAD_URL" -o "$TMP_ARCHIVE" --progress-bar && DOWNLOAD_OK=true
     elif command -v wget &>/dev/null; then
-        wget -q --show-progress "$DOWNLOAD_URL" -O "$TMP_ARCHIVE"
+        wget -q --show-progress "$DOWNLOAD_URL" -O "$TMP_ARCHIVE" && DOWNLOAD_OK=true
     fi
 
-    if [ ! -s "$TMP_ARCHIVE" ]; then
+    if [ "$DOWNLOAD_OK" = false ] || [ ! -s "$TMP_ARCHIVE" ]; then
         rm -rf "$TMP_DIR"
+        if [ "$DOWNLOAD_OK" = false ]; then
+            warn "GitHub release download failed (CDN may still be propagating)."
+        fi
         go_install_fallback
         return
     fi
