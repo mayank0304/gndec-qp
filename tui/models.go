@@ -30,8 +30,6 @@ type progressMsg struct {
 
 type downloadDoneMsg struct{}
 
-type setProgramMsg struct{ program interface{} }
-
 type recentEntry struct {
 	Code      string `json:"code"`
 	Downloads int    `json:"downloads"`

@@ -14,11 +14,13 @@ import (
 	"github.com/IshpreetSingh8264/gndec-qp/db"
 )
 
+var globalProg *tea.Program
+
 func Run() {
 	m := initialModel()
 	m.state = stateSearch
 	p := tea.NewProgram(m, tea.WithAltScreen())
-	p.Send(setProgramMsg{program: p})
+	globalProg = p
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -31,7 +33,7 @@ func RunWithCode(code string) {
 	m.searchInput.SetValue(code)
 	m.selectSubject(code)
 	p := tea.NewProgram(m, tea.WithAltScreen())
-	p.Send(setProgramMsg{program: p})
+	globalProg = p
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -42,7 +44,6 @@ func RunWithCode(code string) {
 
 type model struct {
 	state    state
-	program  *tea.Program
 	quitting bool
 
 	allSubjects []subjectEntry
@@ -114,10 +115,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		m.ready = true
-		return m, nil
-
-	case setProgramMsg:
-		m.program = msg.program.(*tea.Program)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -423,14 +420,14 @@ func (m *model) startDownloads() {
 			url := fmt.Sprintf("https://docs.google.com/uc?export=download&id=%s", job.fileID)
 			resp, err := http.Get(url)
 			if err != nil {
-				m.program.Send(progressMsg{session: job.session, err: fmt.Errorf("network: %w", err)})
+				globalProg.Send(progressMsg{session: job.session, err: fmt.Errorf("network: %w", err)})
 				continue
 			}
 
 			out, err := os.Create(job.filePath)
 			if err != nil {
 				resp.Body.Close()
-				m.program.Send(progressMsg{session: job.session, err: fmt.Errorf("file: %w", err)})
+				globalProg.Send(progressMsg{session: job.session, err: fmt.Errorf("file: %w", err)})
 				continue
 			}
 
@@ -442,26 +439,26 @@ func (m *model) startDownloads() {
 				n, rerr := resp.Body.Read(buf)
 				if n > 0 {
 					if _, werr := out.Write(buf[:n]); werr != nil {
-						m.program.Send(progressMsg{session: job.session, err: werr})
+						globalProg.Send(progressMsg{session: job.session, err: werr})
 						break
 					}
 					written += int64(n)
 					if total > 0 {
-						m.program.Send(progressMsg{session: job.session, percent: float64(written) / float64(total)})
+						globalProg.Send(progressMsg{session: job.session, percent: float64(written) / float64(total)})
 					}
 				}
 				if rerr != nil {
 					if rerr != io.EOF {
-						m.program.Send(progressMsg{session: job.session, err: rerr})
+						globalProg.Send(progressMsg{session: job.session, err: rerr})
 					}
 					break
 				}
 			}
 			out.Close()
 			resp.Body.Close()
-			m.program.Send(progressMsg{session: job.session, percent: 1.0, complete: true})
+			globalProg.Send(progressMsg{session: job.session, percent: 1.0, complete: true})
 		}
-		m.program.Send(downloadDoneMsg{})
+		globalProg.Send(downloadDoneMsg{})
 		recordRecent(code)
 	}()
 }
