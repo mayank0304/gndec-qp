@@ -185,25 +185,22 @@ func (m model) fit(heightBudget int) int {
 	return n
 }
 
-func (m model) padRow(left, right string) string {
-	w := m.innerW() - 1 // -1 for left padding
-	gap := w - lipgloss.Width(left) - lipgloss.Width(right)
-	if gap < 2 {
-		left = trunc(left, w-lipgloss.Width(right)-2)
-		gap = w - lipgloss.Width(left) - lipgloss.Width(right)
+func (m model) row(left, right string, highlight bool) string {
+	// Build a single row that exactly fills m.innerW() width.
+	// Format: " left_part                      right_part"
+	padW := m.innerW() - 2 - lipgloss.Width(left) - lipgloss.Width(right)
+	if padW < 1 {
+		left = trunc(left, m.innerW()-2-lipgloss.Width(right)-1)
+		padW = m.innerW() - 2 - lipgloss.Width(left) - lipgloss.Width(right)
 	}
-	if gap < 0 {
-		return left
+	if padW < 0 {
+		padW = 0
 	}
-	return left + strings.Repeat(" ", gap) + right
-}
-
-func (m model) hlRow(text string) string {
-	return selectedRow.MaxWidth(m.innerW()).Width(m.innerW()).Render(" " + text)
-}
-
-func (m model) normRow(text string) string {
-	return normalRow.MaxWidth(m.innerW()).Width(m.innerW()).Render(" " + text)
+	content := " " + left + strings.Repeat(" ", padW) + right
+	if highlight {
+		return selectedRow.Render(content)
+	}
+	return content
 }
 
 func trunc(s string, maxW int) string {
@@ -268,17 +265,8 @@ func (m model) renderSearch() string {
 			if recMap[s.Code] {
 				tag = dimStyle.Render(" recent")
 			}
-			info := fmt.Sprintf("%d papers", len(s.Papers))
-			line := trunc(code, m.innerW()-lipgloss.Width(info)-lipgloss.Width(tag)-10)
-			if tag != "" {
-				line += tag
-			}
-			row := m.padRow(line, info)
-			if i == m.cursor {
-				b.WriteString(m.hlRow("▸ " + strings.TrimPrefix(row, " ")))
-			} else {
-				b.WriteString(m.normRow("  " + strings.TrimPrefix(row, " ")))
-			}
+			right := fmt.Sprintf("%d papers", len(s.Papers))
+			b.WriteString(m.row("▸ "+code+tag, right, i == m.cursor))
 			b.WriteString("\n")
 		}
 
@@ -336,15 +324,10 @@ func (m model) renderSelect() string {
 		cached := ""
 		paperPath := filepathJoin(dlBase, fmt.Sprintf("%s_%s.pdf", m.selSubject.Code, paper.Session))
 		if _, err := os.Stat(paperPath); err == nil {
-			cached = successStyle.Render(" ✓")
+			cached = successStyle.Render("cached")
 		}
 
-		row := m.padRow(prefix+year, cached)
-		if i == m.detailCursor {
-			b.WriteString(m.hlRow(row))
-		} else {
-			b.WriteString(m.normRow(row))
-		}
+		b.WriteString(m.row(prefix+year, cached, i == m.detailCursor))
 		b.WriteString("\n")
 	}
 
@@ -398,17 +381,16 @@ func (m model) renderDownload() string {
 		session := trunc(year, 12)
 
 		if err, ok := m.failed[paper.Session]; ok {
-			msg := errorStyle.Render("✗ ") + trunc(session, 10) + " " + dimStyle.Render(trunc(err.Error(), availW-15))
-			b.WriteString(m.normRow(msg))
+			b.WriteString(m.row(errorStyle.Render("✗ "+session), dimStyle.Render(trunc(err.Error(), 20)), false))
 		} else if m.done[paper.Session] {
 			doneCount++
-			b.WriteString(m.normRow(successStyle.Render("✓ "+session)))
+			b.WriteString(m.row(successStyle.Render("✓ "+session), "", false))
 		} else if pct, ok := m.progress[paper.Session]; ok {
 			pb := bar(barW, pct)
 			status := fmt.Sprintf("%s %s %s %0.0f%%", m.spinner.View(), session, pb, pct*100)
-			b.WriteString(m.normRow(status))
+			b.WriteString(m.row(status, "", false))
 		} else {
-			b.WriteString(m.normRow(dimStyle.Render("⏳ "+session)))
+			b.WriteString(m.row(dimStyle.Render("⏳ "+session), "", false))
 		}
 		b.WriteString("\n")
 	}
