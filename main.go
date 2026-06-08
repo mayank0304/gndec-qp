@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/mayank0304/gndec-qp/downloader"
+	"github.com/IshpreetSingh8264/gndec-qp/downloader"
+	"github.com/IshpreetSingh8264/gndec-qp/tui"
 )
 
 func main() {
@@ -15,9 +16,21 @@ func main() {
 	var auto bool
 	flag.BoolVar(&auto, "auto", false, "To open automatically in the browser / system viewer")
 
+	var tuiFlag bool
+	flag.BoolVar(&tuiFlag, "tui", false, "Launch the interactive TUI")
+
 	flag.Parse()
 
 	subjectCode := strings.ToUpper(strings.TrimSpace(codeFlag))
+
+	if tuiFlag || subjectCode == "" {
+		if subjectCode != "" {
+			tui.RunWithCode(subjectCode)
+		} else {
+			tui.Run()
+		}
+		return
+	}
 
 	if subjectCode == "" {
 		fmt.Println("Error: Please provide a subject code using the --code flag.")

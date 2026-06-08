@@ -2,7 +2,7 @@
 
 # gndec-qp
 
-### 🚀 Lightning-fast past exam question paper downloads for GNDEC students — directly from the terminal.
+### 🚀 Lightning-fast past exam question paper downloads for GNDEC students — terminal + TUI.
 
 A compiled, zero-dependency Go CLI backed by a statically embedded multi-year index map for sub-millisecond lookups. Eliminates manual cloud directory navigation entirely.
 
@@ -12,51 +12,95 @@ A compiled, zero-dependency Go CLI backed by a statically embedded multi-year in
 
 ## ✨ Features
 
+- **🖥️ Interactive TUI** — Fuzzy search, browse, batch download with progress bars
 - **⚡ Instant Lookups** — Static compile-time hash maps
 - **📦 Batch Downloads** — Retrieves all available papers for a subject at once
 - **📂 Smart Directory Structure** — Auto-groups downloads inside your system's `Downloads/Question Papers/` folder
 - **🖥️ Cross-Platform** — Native execution across Windows, macOS, and Linux
 - **📄 Auto-Open Flag** — Launches PDFs instantly in your default system viewer
+- **💾 Recently Used** — Tracks your last 10 subjects for quick access
+- **📶 Offline Cache** — Shows which papers are already downloaded
 
 ---
 
 ## 📦 Installation
 
-### Route A — Standalone Binaries (No Go Required)
+### Direct Pull & Install (any platform)
 
-Go to the [Releases](../../releases) page of this repository, download the executable for your laptop, and run it directly in your terminal:
+```bash
+# Clone, build, and install in one go
+git clone https://github.com/IshpreetSingh8264/gndec-qp.git
+cd gndec-qp
+make install
+```
 
-- **macOS (M1/M2/M3):** Download `qp-mac-arm64` and run `./qp-mac-arm64 --code BCS-403 --auto`
-- **Windows (64-bit):** Download `qp-windows-amd64.exe` and run `.\qp-windows-amd64.exe --code BCS-403 --auto`
-- **Linux (64-bit):** Download `qp-linux-amd64` and run `./qp-linux-amd64 --code BCS-403 --auto`
+This clones the repo, compiles the binary, and installs it to `/usr/local/bin/qp`.
 
----
+### Unix (Linux / macOS) — One-liner via curl
 
-### Route B — Via Go Compiler
+```bash
+curl -fsSL https://raw.githubusercontent.com/IshpreetSingh8264/gndec-qp/main/install.sh | bash
+```
+
+### Windows — PowerShell
+
+```powershell
+powershell -c "iwr -Uri 'https://raw.githubusercontent.com/IshpreetSingh8264/gndec-qp/main/install.ps1' -OutFile install.ps1; .\install.ps1"
+```
+
+### Via Go Compiler
 
 Requires the Go runtime environment installed on your machine.
 
 ```bash
-go install github.com/mayank0304/gndec-qp@latest
+go install github.com/IshpreetSingh8264/gndec-qp@latest
 ```
 
-> **Note:** Ensure your system environment `PATH` includes your global `go/bin` directory to invoke the command from anywhere:
+### Standalone Binaries
 
-```bash
-gndec-qp --code BCS-403 --auto
-```
+Go to the [Releases](../../releases) page and download the executable for your platform:
+
+- **macOS (M1/M2/M3):** `qp-mac-arm64`
+- **macOS (Intel):** `qp-mac-amd64`
+- **Linux (64-bit):** `qp-linux-amd64`
+- **Linux (ARM64):** `qp-linux-arm64`
+- **Windows (64-bit):** `qp-windows-amd64.exe`
 
 ---
 
 ## 🚀 Quick Start
 
-```bash
-# 1. Download all available papers for a subject
-gndec-qp --code BCS-403
+### Interactive TUI (recommended)
 
-# 2. Download and automatically launch PDFs in your default viewer
-gndec-qp --code PCIT-114 --auto
+```bash
+# Launch the TUI to search, browse, and download papers
+qp
+
+# Launch TUI with a subject pre-filled
+qp --code PCIT-114
 ```
+
+### CLI Mode
+
+```bash
+# Download all available papers for a subject
+qp --code BCS-403
+
+# Download and automatically launch PDFs in your default viewer
+qp --code PCIT-114 --auto
+```
+
+### TUI Keybindings
+
+| Key | Action |
+|-----|--------|
+| `Enter` | Search / Select |
+| `↑` / `↓` | Navigate list |
+| `Space` | Toggle session selection |
+| `a` | Select / Deselect all sessions |
+| `d` | Download selected sessions |
+| `Esc` | Go back |
+| `q` | Return to home / Quit |
 
 ---
 
@@ -75,10 +119,22 @@ Downloads/
 
 ---
 
+## 🔧 Build from Source
+
+```bash
+git clone https://github.com/IshpreetSingh8264/gndec-qp.git
+cd gndec-qp
+make build       # build for current platform
+make build-all   # cross-compile for all platforms (output in build/)
+make install     # build + install to /usr/local/bin
+```
+
+---
+
 ## 🔄 Workflow Comparison
 
 - **Before:** Open browser, open cloud link, wait for UI loading, click year, click branch, click subject, and download individual files manually one by one.
-- **After:** Run a single command `gndec-qp --code BCS-403 --auto` to instantly get and open your papers.
+- **After:** Run `qp` (TUI) or `qp --code BCS-403 --auto` to instantly get and open your papers.
 
 ---
 
