@@ -1,17 +1,13 @@
 package tui
 
-import (
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/IshpreetSingh8264/gndec-qp/db"
-)
+import "github.com/IshpreetSingh8264/gndec-qp/db"
 
-type screen int
+type state int
 
 const (
-	screenHome screen = iota
-	screenSearch
-	screenDetail
-	screenDownload
+	stateSearch state = iota
+	stateSelect
+	stateDownload
 )
 
 type subjectEntry struct {
@@ -20,17 +16,9 @@ type subjectEntry struct {
 }
 
 type downloadJob struct {
-	subjectCode string
-	session     string
-	fileID      string
-	filePath    string
-}
-
-type jobProgress struct {
 	session  string
-	percent  float64
-	complete bool
-	err      error
+	fileID   string
+	filePath string
 }
 
 type progressMsg struct {
@@ -40,20 +28,12 @@ type progressMsg struct {
 	err      error
 }
 
-type downloadDoneMsg struct {
-	completed int
-	total     int
-	errors    []string
-}
+type downloadDoneMsg struct{}
 
-type startDownloadMsg struct{}
+type setProgramMsg struct{ program interface{} }
 
 type recentEntry struct {
 	Code      string `json:"code"`
 	Downloads int    `json:"downloads"`
 	LastUsed  string `json:"last_used"`
-}
-
-type setProgramMsg struct {
-	program *tea.Program
 }

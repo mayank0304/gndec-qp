@@ -54,7 +54,10 @@ var (
 			Foreground(lipgloss.AdaptiveColor{Light: "#E5E7EB", Dark: "#374151"}).
 			Render("────────────────────────────────────")
 
-	checkedBox = "[✓] "
+	dimStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.AdaptiveColor{Light: "#D1D5DB", Dark: "#4B5563"})
+
+	checkedBox   = "[✓] "
 	uncheckedBox = "[ ] "
 	cursorPrefix = "▸ "
 )
