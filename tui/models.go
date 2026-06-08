@@ -2,13 +2,12 @@ package tui
 
 import "github.com/IshpreetSingh8264/gndec-qp/db"
 
-type screen int
+type state int
 
 const (
-	screenHome screen = iota
-	screenSearch
-	screenDetail
-	screenDownload
+	stateSearch state = iota
+	stateSelect
+	stateDownload
 )
 
 type subjectEntry struct {
@@ -17,17 +16,9 @@ type subjectEntry struct {
 }
 
 type downloadJob struct {
-	subjectCode string
-	session     string
-	fileID      string
-	filePath    string
-}
-
-type jobProgress struct {
 	session  string
-	percent  float64
-	complete bool
-	err      error
+	fileID   string
+	filePath string
 }
 
 type progressMsg struct {
@@ -37,13 +28,7 @@ type progressMsg struct {
 	err      error
 }
 
-type downloadDoneMsg struct {
-	completed int
-	total     int
-	errors    []string
-}
-
-type startDownloadMsg struct{}
+type downloadDoneMsg struct{}
 
 type recentEntry struct {
 	Code      string `json:"code"`

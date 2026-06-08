@@ -61,32 +61,56 @@ fetch_latest_version() {
 }
 
 download_binary() {
+    ARCHIVE_NAME="${BINARY}-${OS}-${ARCH}.tar.gz"
     if [ "$VERSION" = "latest" ]; then
-        DOWNLOAD_URL="https://github.com/$REPO/releases/latest/download/${BINARY}-${OS}-${ARCH}"
+        DOWNLOAD_URL="https://github.com/$REPO/releases/latest/download/$ARCHIVE_NAME"
     else
-        DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/${BINARY}-${OS}-${ARCH}"
+        DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/$ARCHIVE_NAME"
     fi
 
     TMP_DIR=$(mktemp -d)
-    TMP_FILE="$TMP_DIR/$BINARY"
+    TMP_ARCHIVE="$TMP_DIR/$ARCHIVE_NAME"
 
     info "Downloading $BINARY for $OS/$ARCH..."
     echo "  $DOWNLOAD_URL"
 
+    DOWNLOAD_OK=false
     if command -v curl &>/dev/null; then
-        curl -fsSL "$DOWNLOAD_URL" -o "$TMP_FILE" --progress-bar
+        curl -sSL "$DOWNLOAD_URL" -o "$TMP_ARCHIVE" --progress-bar && DOWNLOAD_OK=true
     elif command -v wget &>/dev/null; then
-        wget -q --show-progress "$DOWNLOAD_URL" -O "$TMP_FILE"
+        wget -q --show-progress "$DOWNLOAD_URL" -O "$TMP_ARCHIVE" && DOWNLOAD_OK=true
     fi
 
-    if [ ! -s "$TMP_FILE" ]; then
-        err "Download failed. Binary may not exist for this platform yet."
-        err "Try building from source: go install github.com/$REPO@latest"
+    if [ "$DOWNLOAD_OK" = false ] || [ ! -s "$TMP_ARCHIVE" ]; then
+        rm -rf "$TMP_DIR"
+        if [ "$DOWNLOAD_OK" = false ]; then
+            warn "GitHub release download failed (CDN may still be propagating)."
+        fi
+        go_install_fallback
+        return
+    fi
+
+    info "Extracting..."
+    if [ "$(head -c 2 "$TMP_ARCHIVE" | od -A n -t x1 | tr -d ' ' | head -c 4)" != "1f8b" ]; then
+        warn "Downloaded file is not a valid gzip (CDN may still be propagating)."
+        rm -rf "$TMP_DIR"
+        go_install_fallback
+        return
+    fi
+    tar xzf "$TMP_ARCHIVE" -C "$TMP_DIR"
+
+    TMP_FILE="$TMP_DIR/$BINARY"
+    EXTRACTED=$(ls "$TMP_DIR" | grep -v "^$(basename "$TMP_ARCHIVE")$" | head -1)
+    if [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "$BINARY" ]; then
+        mv -f "$TMP_DIR/$EXTRACTED" "$TMP_FILE"
+    elif [ ! -f "$TMP_FILE" ]; then
+        err "Could not find binary in extracted archive."
         rm -rf "$TMP_DIR"
         exit 1
     fi
 
     chmod +x "$TMP_FILE"
+    rm -f "$TMP_ARCHIVE"
     ok "Downloaded successfully"
 }
 
@@ -100,8 +124,14 @@ install_binary() {
     fi
 
     mkdir -p "$INSTALL_DIR"
-    mv "$TMP_FILE" "$INSTALL_DIR/$BINARY"
-    rm -rf "$TMP_DIR"
+    mv -f "$TMP_FILE" "$INSTALL_DIR/$BINARY" 2>/dev/null || {
+        sudo mv -f "$TMP_FILE" "$INSTALL_DIR/$BINARY" 2>/dev/null || {
+            err "Failed to install. Try: sudo cp $TMP_FILE $INSTALL_DIR/$BINARY"
+            rm -rf "$TMP_DIR"
+            exit 1
+        }
+    }
+    rm -rf "$TMP_DIR" 2>/dev/null || true
 
     ok "Installed to $INSTALL_DIR/$BINARY"
 
@@ -113,6 +143,42 @@ install_binary() {
             */bash) echo "  echo 'export PATH=\"\$PATH:$INSTALL_DIR\"' >> ~/.bashrc && source ~/.bashrc" ;;
             *)      echo "  export PATH=\"\$PATH:$INSTALL_DIR\"" ;;
         esac
+    fi
+}
+
+go_install_fallback() {
+    warn "Pre-built binary not found (no GitHub release yet)."
+    warn "Falling back to building from source with 'go install'..."
+    echo ""
+
+    if ! command -v go &>/dev/null; then
+        err "Go is not installed. Install Go from https://go.dev/dl/"
+        err "Then run: go install github.com/$REPO@latest"
+        exit 1
+    fi
+
+    info "Building $BINARY from source..."
+    go install "github.com/$REPO@latest" 2>&1 || {
+        err "Build failed."
+        exit 1
+    }
+
+    GOPATH_BIN="$(go env GOPATH)/bin"
+    if [ -f "$GOPATH_BIN/$BINARY" ]; then
+        ok "Built and installed to $GOPATH_BIN/$BINARY"
+        TMP_FILE="$GOPATH_BIN/$BINARY"
+        install_binary
+        TMP_FILE=""
+        TMP_DIR=""
+        return
+        return
+    else
+        ok "Built successfully via 'go install'"
+        ok "Binary should be at $GOPATH_BIN/$BINARY"
+        if ! echo "$PATH" | tr ':' '\n' | grep -qx "$GOPATH_BIN"; then
+            warn "Add it to PATH: export PATH=\"\$PATH:$GOPATH_BIN\""
+        fi
+        return
     fi
 }
 
@@ -135,7 +201,12 @@ main() {
     detect_os_arch
     fetch_latest_version
     download_binary
-    install_binary
+
+    # download_binary may have already installed via go_install_fallback
+    if [ -n "${TMP_FILE:-}" ] && [ -f "$TMP_FILE" ]; then
+        install_binary
+    fi
+
     verify
 
     echo ""
