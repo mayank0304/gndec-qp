@@ -1,6 +1,9 @@
 package tui
 
-import "github.com/IshpreetSingh8264/gndec-qp/db"
+import (
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/IshpreetSingh8264/gndec-qp/db"
+)
 
 type screen int
 
@@ -49,4 +52,8 @@ type recentEntry struct {
 	Code      string `json:"code"`
 	Downloads int    `json:"downloads"`
 	LastUsed  string `json:"last_used"`
+}
+
+type setProgramMsg struct {
+	program *tea.Program
 }

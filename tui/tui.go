@@ -15,7 +15,7 @@ import (
 func Run() {
 	m := initialModel()
 	p := tea.NewProgram(m, tea.WithAltScreen())
-	m.program = p
+	p.Send(setProgramMsg{program: p})
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running TUI: %v\n", err)
 		os.Exit(1)
@@ -32,11 +32,11 @@ func RunWithCode(code string) {
 		m.screen = screenDetail
 		m.selected = make(map[int]bool)
 		for i := range m.subjects[0].Papers {
-			m.selected[i] = false
+			m.selected[i] = true
 		}
 	}
 	p := tea.NewProgram(m, tea.WithAltScreen())
-	m.program = p
+	p.Send(setProgramMsg{program: p})
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error running TUI: %v\n", err)
 		os.Exit(1)
@@ -210,6 +210,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			recordRecent(m.selectedSubject.Code)
 			m.recent = loadRecent()
 		}
+		return m, nil
+
+	case setProgramMsg:
+		m.program = msg.program
 		return m, nil
 
 	case spinner.TickMsg:

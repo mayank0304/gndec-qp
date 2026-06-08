@@ -159,7 +159,9 @@ func (m model) startDownloads() (tea.Model, tea.Cmd) {
 			errors:    errors,
 		})
 
-		recordRecent(m.selectedSubject.Code)
+		if m.selectedSubject != nil {
+			recordRecent(m.selectedSubject.Code)
+		}
 	}()
 
 	return m, nil
