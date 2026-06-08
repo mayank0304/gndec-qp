@@ -2,3 +2,4 @@ qp
 build/
 .dual-graph/
 *.exe
+qp-*.tar.gz
