@@ -173,6 +173,18 @@ func (m model) View() string {
 
 func (m model) innerW() int { return m.width - 6 }
 
+func (m model) lineCount(s string) int {
+	return strings.Count(s, "\n")
+}
+
+func (m model) fit(heightBudget int) int {
+	n := m.height - heightBudget
+	if n < 1 {
+		return 1
+	}
+	return n
+}
+
 func (m model) padRow(left, right string) string {
 	w := m.innerW() - 1 // -1 for left padding
 	gap := w - lipgloss.Width(left) - lipgloss.Width(right)
@@ -231,10 +243,7 @@ func (m model) renderSearch() string {
 	if len(m.subjects) == 0 {
 		b.WriteString(infoStyle.Render("No subjects match."))
 	} else {
-		maxVis := m.height - 15
-		if maxVis < 1 {
-			maxVis = 1
-		}
+		maxVis := m.fit(17)
 		start := (m.cursor / maxVis) * maxVis
 		if start > len(m.subjects)-maxVis {
 			start = len(m.subjects) - maxVis
@@ -303,10 +312,7 @@ func (m model) renderSelect() string {
 	dlBase := filepathJoin(homeDir, "Downloads", "Question Papers", m.selSubject.Code)
 
 	totalPapers := len(m.selSubject.Papers)
-	maxVis := m.height - 11
-	if maxVis < 1 {
-		maxVis = 1
-	}
+	maxVis := m.fit(13)
 	selStart := (m.detailCursor / maxVis) * maxVis
 	if selStart > totalPapers-maxVis {
 		selStart = totalPapers - maxVis
