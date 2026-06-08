@@ -91,6 +91,12 @@ download_binary() {
     fi
 
     info "Extracting..."
+    if [ "$(head -c 2 "$TMP_ARCHIVE" | od -A n -t x1 | tr -d ' ' | head -c 4)" != "1f8b" ]; then
+        warn "Downloaded file is not a valid gzip (CDN may still be propagating)."
+        rm -rf "$TMP_DIR"
+        go_install_fallback
+        return
+    fi
     tar xzf "$TMP_ARCHIVE" -C "$TMP_DIR"
 
     TMP_FILE="$TMP_DIR/$BINARY"
